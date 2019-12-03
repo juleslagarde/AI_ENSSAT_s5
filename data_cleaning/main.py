@@ -11,21 +11,25 @@ FILE_BLACKLIST = ["Utilisateur~", "Image~", "Discussion_Utilisateur~", "Utilisat
 
 def extractFile(filename: str, h: HTML2Text) -> List[str]:
 	f = open(filename, "r")
-	soup = BeautifulSoup(f.read(), features="html.parser")
-	f.close()
-	result = soup.find_all("div", id=MAIN_DIV_ID)
-	if len(result) != 1:
-		if len(result) == 0:
-			print("Div '%s' not found in file '%s'" % (MAIN_DIV_ID, filename))
-		elif len(result) > 1:
-			print("Found %s div with id='%s' which one is it ? " % (len(result), MAIN_DIV_ID))
-		else:
-			assert False
-		return []
-	div = result[0]
-	s = h.handle(str(div))
-	s = s.replace("[modifier]", "").replace("\\-", "-")
-	return list(filter(lambda x: x != "", s.split("\n")))
+	try:
+		soup = BeautifulSoup(f.read(), features="html.parser")
+		f.close()
+		result = soup.find_all("div", id=MAIN_DIV_ID)
+		if len(result) != 1:
+			if len(result) == 0:
+				print("Div '%s' not found in file '%s'" % (MAIN_DIV_ID, filename))
+			elif len(result) > 1:
+				print("Found %s div with id='%s' which one is it ? " % (len(result), MAIN_DIV_ID))
+			else:
+				assert False
+			return []
+		div = result[0]
+		s = h.handle(str(div))
+		s = s.replace("[modifier]", "").replace("\\-", "-")
+		return list(filter(lambda x: len(x) > 80, s.split("\n")))
+	except UnicodeDecodeError:
+		print("File '%s' can't be decoded with UTF-8" % filename)
+	return []
 
 
 def writeFile(filename, texts):
@@ -45,13 +49,13 @@ def main(argv):
 	files = []
 	for root, d, f in os.walk(inputDir):
 		for file in f:
-			ok = True
-			for fbl in FILE_BLACKLIST:
-				if file.startswith(fbl):
-					ok = False
-					break
-			if ok:
-				files.append(os.path.relpath(os.path.join(root, file), inputDir))
+			# ok = True
+			# for fbl in FILE_BLACKLIST:
+			# 	if file.startswith(fbl):
+			# 		ok = False
+			# 		break
+			# if ok:
+			files.append(os.path.relpath(os.path.join(root, file), inputDir))
 	print("Input directory found ! (%s files will be processed)" % (len(files)))
 	outputDir = argv[2]
 	if not os.path.isdir(outputDir):
@@ -62,9 +66,13 @@ def main(argv):
 	h.ignore_tables = True
 	h.ignore_images = True
 	h.ignore_links = True
+	f = open(os.path.join(outputDir, "input_data2.txt"), "w")
 	for i, file in zip(range(len(files)), files):
 		texts = extractFile(os.path.join(inputDir, file), h)
-		writeFile(os.path.join(outputDir, file).replace(".html", ".txt"), texts)
+		# writeFile(os.path.join(outputDir, file).replace(".html", ".txt"), texts)
+		if len(texts)>0:
+			f.write("\n\n" + ("\n\n".join(texts)))
+	f.close()
 
 
 if __name__ == "__main__":
