@@ -12,7 +12,10 @@ FILE_BLACKLIST = ["Utilisateur~", "Image~", "Discussion_Utilisateur~", "Utilisat
 def extractFile(filename: str, h: HTML2Text) -> List[str]:
 	f = open(filename, "r")
 	try:
-		soup = BeautifulSoup(f.read(), features="html.parser")
+		content = f.read()
+		if len(content) < 1000:
+			return []
+		soup = BeautifulSoup(content, features="html.parser")
 		f.close()
 		result = soup.find_all("div", id=MAIN_DIV_ID)
 		if len(result) != 1:
