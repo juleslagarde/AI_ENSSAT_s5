@@ -59,7 +59,8 @@ def main(argv):
 			# 		break
 			# if ok:
 			files.append(os.path.relpath(os.path.join(root, file), inputDir))
-	print("Input directory found ! (%s files will be processed)" % (len(files)))
+	lenFiles = len(files)
+	print("Input directory found ! (%s files will be processed)" % (lenFiles))
 	outputDir = argv[2]
 	if not os.path.isdir(outputDir):
 		print("Input directory %s not found" % outputDir)
@@ -70,11 +71,13 @@ def main(argv):
 	h.ignore_images = True
 	h.ignore_links = True
 	f = open(os.path.join(outputDir, "input_data2.txt"), "w")
-	for i, file in zip(range(len(files)), files):
+	for i, file in zip(range(lenFiles), files):
 		texts = extractFile(os.path.join(inputDir, file), h)
 		# writeFile(os.path.join(outputDir, file).replace(".html", ".txt"), texts)
-		if len(texts)>0:
+		if len(texts) > 0:
 			f.write("\n\n" + ("\n\n".join(texts)))
+		if i % 1000 == 0:
+			print("Processed %s out of %s (%5.2f%%)" % (i + 1, lenFiles, (i + 1) * 100 / lenFiles))
 	f.close()
 
 
