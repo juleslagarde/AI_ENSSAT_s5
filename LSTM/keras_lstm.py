@@ -25,12 +25,12 @@ if args.data_path:
     data_path = args.data_path
 
 def read(filename):
-    with tf.gfile.GFile(filename, "rb") as f:
-        return f.read().decode("utf-8").replace("\n", "<eos>")
+    with tf.gfile.GFile(filename, "r") as f:
+        return [line[:-1] for line in f.readlines()]
 
 
 def build_vocab(filename):
-    data = read(filename)
+    data = "\0".join(read(filename))
 
     counter = collections.Counter(data)
     count_pairs = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
@@ -41,9 +41,22 @@ def build_vocab(filename):
     return letter_to_id
 
 
-def file_to_letter_ids(filename, letter_to_id):
-    data = read(filename)
-    return [letter_to_id[letter] for letter in data if letter in letter_to_id]
+def read_x_y(filename_x, filename_y, letter_to_id):
+    data_x = read(filename_x)
+    data_y = read(filename_y)
+    data=[[],[]]
+    for x, y in zip(data_x, data_y):
+        data[0].extend([letter_to_id[letter] for letter in x if letter in letter_to_id])
+        data[1].extend([letter_to_id[letter] for letter in y if letter in letter_to_id])
+        diff = len(data[1]) - len(data[0])
+        if diff > 0:
+            data[0].extend([letter_to_id['\0'] for _ in range(diff+1)])
+            data[1].append(letter_to_id['\0'])
+        else:
+            data[0].append(letter_to_id['\0'])
+            data[1].extend([letter_to_id['\0'] for _ in range(abs(diff)+1)])
+        0+0
+    return data  # [letter_to_id[letter] for x, y in zip(data_x, data_y) if letter in letter_to_id]
 
 
 def load_data():
@@ -56,21 +69,17 @@ def load_data():
     test_path_y = os.path.join(data_path, "s2_out.test.txt")
     # build the complete vocabulary_size, then convert text data to list of integers
     letter_to_id = build_vocab(train_path_x)
-    train_data_x = file_to_letter_ids(train_path_x, letter_to_id)
-    train_data_y = file_to_letter_ids(train_path_y, letter_to_id)
-    valid_data_x = file_to_letter_ids(valid_path_x, letter_to_id)
-    valid_data_y = file_to_letter_ids(valid_path_y, letter_to_id)
-    test_data_x = file_to_letter_ids(test_path_x, letter_to_id)
-    test_data_y = file_to_letter_ids(test_path_y, letter_to_id)
+    train_data = read_x_y(train_path_x, train_path_y, letter_to_id)
+    valid_data = read_x_y(valid_path_x, valid_path_y, letter_to_id)
+    test_data = read_x_y(test_path_x, test_path_y, letter_to_id)
     vocabulary_size = len(letter_to_id)
     reversed_dictionary = dict(zip(letter_to_id.values(), letter_to_id.keys()))
 
-    train_data = (train_data_x,train_data_y)
     print(train_data[:][:5])
     print(letter_to_id)
     print(vocabulary_size)
     #print(" ".join([(reversed_dictionary[a],reversed_dictionary[b]) for a,b in train_data[:10]]))
-    return train_data, (valid_data_x,valid_data_y), (test_data_x, test_data_y), vocabulary_size, reversed_dictionary
+    return train_data, valid_data, test_data, vocabulary_size, reversed_dictionary
 
 
 train_data, valid_data, test_data, vocabulary_size, reversed_dictionary = load_data()
@@ -114,7 +123,7 @@ valid_data_generator = KerasBatchGenerator(valid_data, num_steps, batch_size, vo
                                            skip_step=num_steps)
 
 hidden_size = 500
-use_dropout=True
+use_dropout=False
 model = Sequential()
 model.add(Embedding(vocabulary_size, hidden_size, input_length=num_steps))
 model.add(LSTM(hidden_size, return_sequences=True))
