@@ -148,40 +148,40 @@ if args.run_opt == 1:
     #                     validation_steps=10)
     model.save(data_path + "/final_model.hdf5")
 elif args.run_opt == 2:
-    model = load_model(data_path + "model-40.hdf5")
-    dummy_iters = 40
-    example_training_generator = KerasBatchGenerator(train_data[0], num_steps, 1, vocabulary_size,
-                                                     skip_step=1)
+    model = load_model(data_path + "final_model.hdf5")
+    dummy_iters = 10
+    example_training_generator = KerasBatchGenerator(train_data, num_steps, 10, vocabulary_size,
+                                                     skip_step=10)
     print("Training data:")
-    for i in range(dummy_iters):
-        dummy = next(example_training_generator.generate())
-    num_predict = 10
+    # for i in range(dummy_iters):
+    #     dummy = next(example_training_generator.generate())
+    num_predict = 100
     true_print_out = "Actual words: "
     pred_print_out = "Predicted words: "
     for i in range(num_predict):
         data = next(example_training_generator.generate())
         prediction = model.predict(data[0])
         predict_word = np.argmax(prediction[:, num_steps-1, :])
-        true_print_out += reversed_dictionary[train_data[num_steps + dummy_iters + i]] + " "
-        pred_print_out += reversed_dictionary[predict_word] + " "
+        true_print_out += reversed_dictionary[train_data[1][num_steps + dummy_iters + i]]
+        pred_print_out += reversed_dictionary[predict_word]
     print(true_print_out)
     print(pred_print_out)
     # test data set
     dummy_iters = 40
-    example_test_generator = KerasBatchGenerator(test_data[0], num_steps, 1, vocabulary_size,
+    example_test_generator = KerasBatchGenerator(test_data, num_steps, 1, vocabulary_size,
                                                      skip_step=1)
     print("Test data:")
-    for i in range(dummy_iters):
-        dummy = next(example_test_generator.generate())
-    num_predict = 10
+    # for i in range(dummy_iters):
+    #     dummy = next(example_test_generator.generate())
+    num_predict = 100
     true_print_out = "Actual words: "
     pred_print_out = "Predicted words: "
     for i in range(num_predict):
         data = next(example_test_generator.generate())
         prediction = model.predict(data[0])
         predict_word = np.argmax(prediction[:, num_steps - 1, :])
-        true_print_out += reversed_dictionary[test_data[num_steps + dummy_iters + i]] + " "
-        pred_print_out += reversed_dictionary[predict_word] + " "
+        true_print_out += reversed_dictionary[test_data[1][num_steps + dummy_iters + i]]
+        pred_print_out += reversed_dictionary[predict_word]
     print(true_print_out)
     print(pred_print_out)
 
